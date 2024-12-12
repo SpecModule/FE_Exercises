@@ -6,40 +6,35 @@ if (!axios) {
   throw new Error('Axios instance is not provided. Make sure it is injected properly.');
 }
 
-const word = ref("");
+const name = ref("");
 const result = ref<string | null>(null);
 
-async function getDictionary() {
-  if (!word.value) {
-    result.value = "Vui lòng nhập một từ!";
-    return;
-  }
+async function Greeting() {
 
   try {
-    const response = await axios.get(`http://localhost:8080/dictionary?word=${word.value}`);
+    const response = await axios.get(`http://localhost:8080/greeting?name=${name.value}`);
     result.value = response.data;
   } catch (error:any) {
-    console.error("Error fetching dictionary data:", error);
+    console.error("Error fetching data:", error);
     result.value = error.response.data;
   }
 }
 </script>
 
 <template>
-  <h1 class="text-5xl text-center">Từ điển</h1>
+  <h1 class="text-5xl text-center">{{ result }}</h1>
   <div class="flex justify-center mt-5 h-10">
     <input
       type="text"
-      v-model="word"
-      placeholder="Nhập từ"
+      v-model="name"
+      placeholder="Nhập tên bạn"
       class="w-60 border-2 border-blue-400 text-center rounded-s-md"
     />
     <button
-      @click="getDictionary"
+      @click="Greeting"
       class="ps-4 pe-4 rounded-e-md bg-blue-600 text-white"
     >
-      Tìm kiếm
+      Submit
     </button>
   </div>
-  <p class="mt-2 text-xl text-center">{{ result }}</p>
 </template>
