@@ -12,7 +12,7 @@ const operator = ref('')
 const result = ref<any | null>(null)
 
 async function getDictionary() {
-  
+
   try {
     const response = await axios.get(
       `http://localhost:8080/calculator?firstNumber=${firstNumber.value}&secondNumber=${secondNumber.value}&operator=${operator.value}`,
