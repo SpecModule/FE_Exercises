@@ -38,11 +38,13 @@ function closeModalUpdate() {
 
 function showModal(id:number) {
   isShowModal.value = true
+  isShowModalUpdate.value = false
   getEmployee(id);
 }
 
 function showModalUpdate(id:number) {
   isShowModalUpdate.value = true
+  isShowModal.value = false
   getEmployee(id);
 }
 
@@ -69,6 +71,7 @@ async function updateInfo(id: number) {
 async function deleteEmployee(idEmployee: number) {
   let apiObj = `${api}${apiEmployee}/${idEmployee}`
   employee.value = await apiToServer(apiObj, "DELETE")
+  getAllEmployees();
 }
 </script>
 
@@ -139,7 +142,7 @@ async function deleteEmployee(idEmployee: number) {
   <div id="Update">
     <fwb-modal v-if="isShowModalUpdate" @close="closeModalUpdate">
       <template #header>
-        <div class="flex items-center text-lg">Chi tiết thông tin</div>
+        <div class="flex items-center text-lg">Cập nhật thông tin</div>
       </template>
       <template #body>
         <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Tên</p>
@@ -154,7 +157,7 @@ async function deleteEmployee(idEmployee: number) {
       <template #footer>
         <div class="flex justify-between">
           <fwb-button @click="closeModalUpdate" color="alternative">Close</fwb-button>
-          <fwb-button @click="updateInfo(employee.id)" color="green">Update</fwb-button>
+          <fwb-button @click="updateInfo(employee.id)" color="alternative">Update</fwb-button>
         </div>
       </template>
     </fwb-modal>
