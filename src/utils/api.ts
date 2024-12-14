@@ -15,7 +15,7 @@ export async function apiToServer(api: string, method: string, data: any = null)
     result.value = response.data.data;
   } catch (error: any) {
     console.error('Error during API call:', error.message || error);
-    result.value = error.message || { message: 'Unknown error occurred' };
+    result.value = [];
   }
 
   return result.value;
@@ -24,3 +24,4 @@ export async function apiToServer(api: string, method: string, data: any = null)
 
 export const api = "http://localhost:8080"
 export const apiEmployee = "/employee"
+export const apiEmployeeSearch = "/employee/search"

@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { api, apiEmployee, apiToServer } from '@/utils/api'
 import { ref } from 'vue'
+import { api, apiEmployee, apiEmployeeSearch, apiToServer } from '@/utils/api'
+import EmployeeAddModal from './modal/EmployeeAddModal.vue'
+import EmployeeUpdateModal from './modal/EmployeeUpdateModal.vue'
+import EmployeeDetailModal from './modal/EmployeeDetailModal.vue'
 
 let employees = ref<any>(null)
 let employee = ref<any>(null)
-
 
 async function getAllEmployees() {
   let apiObj = `${api}${apiEmployee}`
@@ -18,15 +20,9 @@ async function getEmployee(idEmployee: number) {
 
 getAllEmployees()
 
-import { FwbButton, FwbModal } from 'flowbite-vue'
-
 const isShowModal = ref(false)
 const isShowModalUpdate = ref(false)
 const isShowModalAdd = ref(false)
-const name = ref("")
-const birthday = ref("")
-const salary = ref()
-const gender = ref("")
 
 function closeModal() {
   isShowModal.value = false
@@ -41,17 +37,17 @@ function closeModalAdd() {
 }
 
 async function showModal(id: number) {
+  await getEmployee(id)
   isShowModal.value = true
   isShowModalUpdate.value = false
   isShowModalAdd.value = false
-  await getEmployee(id)
 }
 
 async function showModalUpdate(id: number) {
+  await getEmployee(id)
   isShowModalUpdate.value = true
   isShowModal.value = false
   isShowModalAdd.value = false
-  await getEmployee(id)
 }
 
 function showModalAdd() {
@@ -66,6 +62,7 @@ async function updateInfo(id: number) {
     name: employee.value.name,
     birthday: employee.value.birthday,
     gender: employee.value.gender,
+    phone: employee.value.phone,
     salary: employee.value.salary,
   }
 
@@ -82,22 +79,16 @@ async function updateInfo(id: number) {
 
 async function deleteEmployee(idEmployee: number) {
   let apiObj = `${api}${apiEmployee}/${idEmployee}`
-  employee.value = await apiToServer(apiObj, 'DELETE')
+  await apiToServer(apiObj, 'DELETE')
   await getAllEmployees()
+  closeModal()
+  closeModalAdd()
+  closeModalUpdate()
 }
 
-async function addEmployee() {
+async function addEmployee(newEmployee: any) {
   const apiObj = `${api}${apiEmployee}`
-  const addEmployee = {
-    name: name.value,
-    birthday: birthday.value,
-    gender: gender.value,
-    salary: salary.value,
-  }
-
-  console.log(addEmployee)
-
-  const result = await apiToServer(apiObj, 'POST', addEmployee)
+  const result = await apiToServer(apiObj, 'POST', newEmployee)
 
   if (result) {
     alert('Thêm employee thành công!')
@@ -108,12 +99,158 @@ async function addEmployee() {
   }
 }
 
+// ----------------------------------------------------SEARCH------------------------------------------------------------
+const name = ref("");
+const dobFrom = ref("");
+const dobTo = ref("");
+const gender = ref("Tất cả");
+const salaryRange = ref("Tất cả");
+const phone = ref("");
+const departmentId = ref("Tất cả");
+
+async function resetForm() {
+  name.value = "";
+  dobFrom.value = "";
+  dobTo.value = "";
+  gender.value = "Tất cả";
+  salaryRange.value = "Tất cả";
+  phone.value = "";
+  departmentId.value = "Tất cả";
+  await getAllEmployees();
+}
+
+async function search() {
+  const queryParams = {
+    name: name.value || null,
+    dobFrom: dobFrom.value || null,
+    dobTo: dobTo.value || null,
+    gender: gender.value === "Tất cả" ? null : gender.value,
+    salaryRange: salaryRange.value === "Tất cả" ? null : salaryRange.value,
+    phone: phone.value || null,
+    departmentId: departmentId.value === "Tất cả" ? null : departmentId.value,
+  };
+
+  const queryString = Object.entries(queryParams)
+    .filter(([_, value]) => value !== null && value !== "")
+    .map(([key, value]) => `${key}=${encodeURIComponent(value as string)}`)
+    .join("&");
+
+  const apiUrl = `${api}${apiEmployeeSearch}?${queryString}`;
+  console.log(apiUrl)
+
+  try {
+    const result = await apiToServer(apiUrl, "GET", null);
+    employees.value = result;
+  } catch (error) {
+    console.error("Error fetching employees:", error);
+    employees.value = [];
+  }
+}
+
 </script>
 
 <template>
+  <div class="p-6 max-w-4xl mx-auto mb-5">
+    <h2 class="text-xl font-bold mb-6">Tìm kiếm nhân viên</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Tên (Tìm kiếm gần đúng)</label>
+        <input
+          type="text"
+          v-model="name"
+          placeholder="Nhập tên"
+          class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Ngày sinh từ</label>
+        <input
+          type="date"
+          v-model="dobFrom"
+          class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Ngày sinh đến</label>
+        <input
+          type="date"
+          v-model="dobTo"
+          class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Giới tính</label>
+        <select
+          v-model="gender"
+          class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">Tất cả</option>
+          <option>Nam</option>
+          <option>Nữ</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Mức lương</label>
+        <select
+          v-model="salaryRange"
+          class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">Tất cả</option>
+          <option value="0-5000">0 - 5000</option>
+          <option value="5000-10000">5000 - 10000</option>
+          <option value="10000+">10000+</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại (Tìm kiếm gần đúng)</label>
+        <input
+          type="text"
+          v-model="phone"
+          placeholder="Nhập số điện thoại"
+          class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Bộ phận</label>
+        <select
+          v-model="departmentId"
+          class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="" >Tất cả</option>
+          <option value="1" >Nhân sự</option>
+          <option value="2" >Kỹ thuật</option>
+          <option value="3" >Kinh doanh</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mt-6 flex justify-end gap-4">
+      <button
+        type="button"
+        @click="resetForm"
+        class="px-4 py-2 bg-teal-500 text-white rounded-md shadow hover:bg-teal-600"
+      >
+        Đặt lại
+      </button>
+      <button
+        type="button"
+        @click="search"
+        class="px-4 py-2 bg-blue-500 text-white rounded-md shadow hover:bg-blue-600"
+      >
+        Tìm kiếm
+      </button>
+    </div>
+  </div>
+
   <h1 class="text-5xl text-center mb-5">Danh sách nhân viên</h1>
-  <div class="flex justify-end">
-    <button @click="showModalAdd" class="ps-4 pe-4 rounded-md bg-blue-600 text-white">
+  <div class="flex justify-end mb-3 me-40">
+    <button @click="showModalAdd" class="p-2 rounded-md bg-blue-600 text-white">
       Thêm mới
     </button>
   </div>
@@ -125,16 +262,18 @@ async function addEmployee() {
           <th class="border border-slate-300">Tên</th>
           <th class="border border-slate-300">Ngày sinh</th>
           <th class="border border-slate-300">Giới tính</th>
+          <th class="border border-slate-300">Số điện thoại</th>
           <th class="border border-slate-300">Lương</th>
           <th class="border border-slate-300">Thao tác</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(employee, index)  in employees">
-          <td class="border border-slate-300">{{ index + 1}}</td>
+        <tr v-for="(employee, index) in employees" :key="employee.id">
+          <td class="border border-slate-300">{{ index + 1 }}</td>
           <td class="border border-slate-300">{{ employee.name }}</td>
           <td class="border border-slate-300">{{ employee.birthday }}</td>
           <td class="border border-slate-300">{{ employee.gender }}</td>
+          <td class="border border-slate-300">{{ employee.phone }}</td>
           <td class="border border-slate-300">{{ employee.salary }}</td>
           <td class="border border-slate-300 flex gap-3">
             <button
@@ -161,81 +300,18 @@ async function addEmployee() {
     </table>
   </div>
 
-  <div class="flex justify-center mt-5">
-    <div id="View">
-      <fwb-modal v-if="isShowModal" @close="closeModal">
-        <template #header>
-          <div class="flex items-center text-lg">Chi tiết thông tin</div>
-        </template>
-        <template #body>
-          <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Tên</p>
-          <input type="text" v-model="employee.name" />
-          <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Ngày sinh</p>
-          <input type="text" v-model="employee.birthday" />
-          <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Giới tính</p>
-          <input type="text" v-model="employee.gender" />
-          <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Lương</p>
-          <input type="text" v-model="employee.salary" />
-        </template>
-        <template #footer>
-          <div class="flex justify-between">
-            <fwb-button @click="closeModal" color="alternative">Close</fwb-button>
-            <!-- <fwb-button @click="closeModal" color="green"> Submit</fwb-button> -->
-          </div>
-        </template>
-      </fwb-modal>
-    </div>
+  <div class="absolute top-20 left-1/3">
+    <div class="flex justify-center">
+      <EmployeeDetailModal v-if="isShowModal" :employee="employee" @close="closeModal" />
 
-    <div id="Update">
-      <fwb-modal v-if="isShowModalUpdate" @close="closeModalUpdate">
-        <template #header>
-          <div class="flex items-center text-lg">Cập nhật thông tin</div>
-        </template>
-        <template #body>
-          <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Tên</p>
-          <input type="text" v-model="employee.name" />
-          <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Ngày sinh</p>
-          <input type="text" v-model="employee.birthday" />
-          <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Giới tính</p>
-          <input type="text" v-model="employee.gender" />
-          <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Lương</p>
-          <input type="text" v-model="employee.salary" />
-        </template>
-        <template #footer>
-          <div class="flex justify-between">
-            <fwb-button @click="closeModalUpdate" color="alternative">Close</fwb-button>
-            <fwb-button @click="updateInfo(employee.id)" color="alternative">Update</fwb-button>
-          </div>
-        </template>
-      </fwb-modal>
-    </div>
+      <EmployeeUpdateModal
+        v-if="isShowModalUpdate"
+        :employee="employee"
+        @close="closeModalUpdate"
+        @update="updateInfo"
+      />
 
-    <div id="Add">
-      <fwb-modal v-if="isShowModalAdd" @close="closeModalAdd">
-        <template #header>
-          <div class="flex items-center text-lg">Thêm nhân viên</div>
-        </template>
-        <template #body>
-          <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Tên</p>
-          <input type="text" v-model="name" />
-          <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Ngày sinh</p>
-          <input type="text" v-model="birthday" />
-          <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Giới tính</p>
-          <select v-model="gender" class="w-96 border-2 border-blue-400 text-center rounded-md">
-            <option disabled value="">Chọn giới tính</option>
-            <option>Nam</option>
-            <option>Nữ</option>
-          </select>
-          <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Lương</p>
-          <input type="number" v-model="salary" />
-        </template>
-        <template #footer>
-          <div class="flex justify-between">
-            <fwb-button @click="closeModalAdd" color="alternative">Đóng</fwb-button>
-            <fwb-button @click="addEmployee" color="alternative">Thêm mới</fwb-button>
-          </div>
-        </template>
-      </fwb-modal>
+      <EmployeeAddModal v-if="isShowModalAdd" @close="closeModalAdd" @add="addEmployee" />
     </div>
   </div>
 </template>
