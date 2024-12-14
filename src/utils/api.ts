@@ -12,10 +12,10 @@ export async function apiToServer(api: string, method: string, data: any = null)
     };
 
     const response = await axios(config);
-    result.value = response.data;
+    result.value = response.data.data;
   } catch (error: any) {
     console.error('Error during API call:', error.message || error);
-    result.value = error.response?.data || { message: 'Unknown error occurred' };
+    result.value = error.message || { message: 'Unknown error occurred' };
   }
 
   return result.value;
