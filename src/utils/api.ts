@@ -12,7 +12,8 @@ export async function apiToServer(api: string, method: string, data: any = null)
     };
 
     const response = await axios(config);
-    result.value = response.data.data;
+    result.value = response;
+
   } catch (error: any) {
     console.error('Error during API call:', error.message || error);
     result.value = [];

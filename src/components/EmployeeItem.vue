@@ -5,20 +5,29 @@ import EmployeeAddModal from './modal/EmployeeAddModal.vue'
 import EmployeeUpdateModal from './modal/EmployeeUpdateModal.vue'
 import EmployeeDetailModal from './modal/EmployeeDetailModal.vue'
 
-let employees = ref<any>(null)
-let employee = ref<any>(null)
+// ---------------------------------------------PAGINATION-----------------------------------------------------
 
-async function getAllEmployees() {
-  let apiObj = `${api}${apiEmployee}`
-  employees.value = await apiToServer(apiObj, 'GET')
+let pageable: { pageNumber: 0, pageSize: 5, totalPages: 0 };
+let totalPages: 0;
+
+let employees = ref<any>(null);
+let employee = ref<any>(null);
+
+async function getAllEmployees(page:number) {
+  const apiObj = `${api}${apiEmployee}?page=${page}`
+  const result = await apiToServer(apiObj, 'GET')
+  employees.value = result.data.content;
+  pageable = result.data.pageable;
+  totalPages = result.data.totalPages;
 }
 
 async function getEmployee(idEmployee: number) {
   let apiObj = `${api}${apiEmployee}/${idEmployee}`
-  employee.value = await apiToServer(apiObj, 'GET')
+  const result = await apiToServer(apiObj, 'GET');
+  employee.value = result.data.data;
 }
 
-getAllEmployees()
+getAllEmployees(0)
 
 const isShowModal = ref(false)
 const isShowModalUpdate = ref(false)
@@ -71,7 +80,7 @@ async function updateInfo(id: number) {
   if (result) {
     alert('Cập nhật thông tin thành công!')
     closeModalUpdate()
-    await getAllEmployees()
+    await getAllEmployees(0)
   } else {
     alert('Cập nhật thông tin thất bại!')
   }
@@ -80,7 +89,7 @@ async function updateInfo(id: number) {
 async function deleteEmployee(idEmployee: number) {
   let apiObj = `${api}${apiEmployee}/${idEmployee}`
   await apiToServer(apiObj, 'DELETE')
-  await getAllEmployees()
+  await getAllEmployees(0)
   closeModal()
   closeModalAdd()
   closeModalUpdate()
@@ -93,7 +102,7 @@ async function addEmployee(newEmployee: any) {
   if (result) {
     alert('Thêm employee thành công!')
     closeModalAdd()
-    await getAllEmployees()
+    await getAllEmployees(0)
   } else {
     alert('Thêm employee thất bại!')
   }
@@ -116,7 +125,7 @@ async function resetForm() {
   salaryRange.value = "Tất cả";
   phone.value = "";
   departmentId.value = "Tất cả";
-  await getAllEmployees();
+  await getAllEmployees(0);
 }
 
 async function search() {
@@ -140,12 +149,13 @@ async function search() {
 
   try {
     const result = await apiToServer(apiUrl, "GET", null);
-    employees.value = result;
+    employees.value = result.data.data;
   } catch (error) {
     console.error("Error fetching employees:", error);
     employees.value = [];
   }
 }
+
 
 </script>
 
@@ -207,7 +217,9 @@ async function search() {
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại (Tìm kiếm gần đúng)</label>
+        <label class="block text-sm font-medium text-gray-700 mb-1"
+          >Số điện thoại (Tìm kiếm gần đúng)</label
+        >
         <input
           type="text"
           v-model="phone"
@@ -222,10 +234,10 @@ async function search() {
           v-model="departmentId"
           class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
         >
-          <option value="" >Tất cả</option>
-          <option value="1" >Nhân sự</option>
-          <option value="2" >Kỹ thuật</option>
-          <option value="3" >Kinh doanh</option>
+          <option value="">Tất cả</option>
+          <option value="1">Nhân sự</option>
+          <option value="2">Kỹ thuật</option>
+          <option value="3">Kinh doanh</option>
         </select>
       </div>
     </div>
@@ -250,9 +262,7 @@ async function search() {
 
   <h1 class="text-5xl text-center mb-5">Danh sách nhân viên</h1>
   <div class="flex justify-end mb-3 me-40">
-    <button @click="showModalAdd" class="p-2 rounded-md bg-blue-600 text-white">
-      Thêm mới
-    </button>
+    <button @click="showModalAdd" class="p-2 rounded-md bg-blue-600 text-white">Thêm mới</button>
   </div>
   <div class="text-center flex justify-center">
     <table class="table-auto border-collapse border border-slate-400">
@@ -298,6 +308,34 @@ async function search() {
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <div>
+    <nav class="flex items-center justify-center mt-6">
+      <ul class="inline-flex items-center space-x-2">
+        <li>
+          <button
+            class="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
+            :disabled="pageable?.pageNumber === 0"
+            @click="getAllEmployees(pageable?.pageNumber - 1)"
+          >
+            Previous
+          </button>
+        </li>
+        <li class="text-gray-700">
+          Page {{ pageable?.pageNumber + 1 }} of {{ totalPages }}
+        </li>
+        <li>
+          <button
+            class="px-4 py-2 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
+            :disabled="pageable?.pageNumber + 1 >= totalPages"
+            @click="getAllEmployees(pageable?.pageNumber + 1)"
+          >
+            Next
+          </button>
+        </li>
+      </ul>
+    </nav>
   </div>
 
   <div class="absolute top-20 left-1/3">
