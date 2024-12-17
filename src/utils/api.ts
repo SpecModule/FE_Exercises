@@ -25,4 +25,3 @@ export async function apiToServer(api: string, method: string, data: any = null)
 
 export const api = "http://localhost:8080"
 export const apiEmployee = "/employee"
-export const apiEmployeeSearch = "/employee/search"

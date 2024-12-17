@@ -1,10 +1,29 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { api, apiEmployee, apiEmployeeSearch, apiToServer } from '@/utils/api'
+import { api, apiEmployee, apiToServer } from '@/utils/api'
 import EmployeeAddModal from './modal/EmployeeAddModal.vue'
 import EmployeeUpdateModal from './modal/EmployeeUpdateModal.vue'
 import EmployeeDetailModal from './modal/EmployeeDetailModal.vue'
 
+// ----------------------------------------------------SEARCH------------------------------------------------------------
+const name = ref("");
+const dobFrom = ref("");
+const dobTo = ref("");
+const gender = ref("Tất cả");
+const salaryRange = ref("Tất cả");
+const phone = ref("");
+const departmentId = ref("Tất cả");
+
+async function resetForm() {
+  name.value = "";
+  dobFrom.value = "";
+  dobTo.value = "";
+  gender.value = "Tất cả";
+  salaryRange.value = "Tất cả";
+  phone.value = "";
+  departmentId.value = "Tất cả";
+  await getAllEmployees(0);
+}
 // ---------------------------------------------PAGINATION-----------------------------------------------------
 
 let pageable: { pageNumber: 0, pageSize: 5, totalPages: 0 };
@@ -14,11 +33,33 @@ let employees = ref<any>(null);
 let employee = ref<any>(null);
 
 async function getAllEmployees(page:number) {
-  const apiObj = `${api}${apiEmployee}?page=${page}`
-  const result = await apiToServer(apiObj, 'GET')
-  employees.value = result.data.content;
-  pageable = result.data.pageable;
-  totalPages = result.data.totalPages;
+  const queryParams = {
+    name: name.value || null,
+    dobFrom: dobFrom.value || null,
+    dobTo: dobTo.value || null,
+    gender: gender.value === "Tất cả" ? null : gender.value,
+    salaryRange: salaryRange.value === "Tất cả" ? null : salaryRange.value,
+    phone: phone.value || null,
+    departmentId: departmentId.value === "Tất cả" ? null : departmentId.value,
+    page: page || 0
+  };
+
+  const queryString = Object.entries(queryParams)
+    .filter(([_, value]) => value !== null && value !== "")
+    .map(([key, value]) => `${key}=${encodeURIComponent(value as string)}`)
+    .join("&");
+
+  const apiUrl = `${api}${apiEmployee}?${queryString}`;
+
+  try {
+    const result = await apiToServer(apiUrl, "GET", null);
+    employees.value = result.data.content;
+    pageable = result.data.pageable;
+    totalPages = result.data.totalPages;
+  } catch (error) {
+    console.error("Error fetching employees:", error);
+    employees.value = [];
+  }
 }
 
 async function getEmployee(idEmployee: number) {
@@ -107,55 +148,6 @@ async function addEmployee(newEmployee: any) {
     alert('Thêm employee thất bại!')
   }
 }
-
-// ----------------------------------------------------SEARCH------------------------------------------------------------
-const name = ref("");
-const dobFrom = ref("");
-const dobTo = ref("");
-const gender = ref("Tất cả");
-const salaryRange = ref("Tất cả");
-const phone = ref("");
-const departmentId = ref("Tất cả");
-
-async function resetForm() {
-  name.value = "";
-  dobFrom.value = "";
-  dobTo.value = "";
-  gender.value = "Tất cả";
-  salaryRange.value = "Tất cả";
-  phone.value = "";
-  departmentId.value = "Tất cả";
-  await getAllEmployees(0);
-}
-
-async function search() {
-  const queryParams = {
-    name: name.value || null,
-    dobFrom: dobFrom.value || null,
-    dobTo: dobTo.value || null,
-    gender: gender.value === "Tất cả" ? null : gender.value,
-    salaryRange: salaryRange.value === "Tất cả" ? null : salaryRange.value,
-    phone: phone.value || null,
-    departmentId: departmentId.value === "Tất cả" ? null : departmentId.value,
-  };
-
-  const queryString = Object.entries(queryParams)
-    .filter(([_, value]) => value !== null && value !== "")
-    .map(([key, value]) => `${key}=${encodeURIComponent(value as string)}`)
-    .join("&");
-
-  const apiUrl = `${api}${apiEmployeeSearch}?${queryString}`;
-  console.log(apiUrl)
-
-  try {
-    const result = await apiToServer(apiUrl, "GET", null);
-    employees.value = result.data.data;
-  } catch (error) {
-    console.error("Error fetching employees:", error);
-    employees.value = [];
-  }
-}
-
 
 </script>
 
@@ -252,7 +244,7 @@ async function search() {
       </button>
       <button
         type="button"
-        @click="search"
+        @click="getAllEmployees(0)"
         class="px-4 py-2 bg-blue-500 text-white rounded-md shadow hover:bg-blue-600"
       >
         Tìm kiếm
