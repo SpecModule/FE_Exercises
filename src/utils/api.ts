@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { inject, ref } from 'vue'
+import { ref } from 'vue'
 
 export async function apiToServer(api: string, method: string, data: any = null) {
   const result = ref<any>(null);
@@ -15,7 +15,7 @@ export async function apiToServer(api: string, method: string, data: any = null)
     result.value = response;
 
   } catch (error: any) {
-    console.error('Error during API call:', error.message || error);
+    alert('Error');
     result.value = [];
   }
 
@@ -24,4 +24,4 @@ export async function apiToServer(api: string, method: string, data: any = null)
 
 
 export const api = "http://localhost:8080"
-export const apiEmployee = "/employee"
+export const apiEmployee = "/premises"

@@ -3,6 +3,7 @@ import DictionaryView from '../views/DictionaryView.vue'
 import GreetingView from '@/views/GreetingView.vue'
 import CalculatorView from '@/views/CalculatorView.vue'
 import EmployeeView from '@/views/EmployeeView.vue'
+import PremisesView from '@/views/PremisesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -31,6 +32,11 @@ const router = createRouter({
       path: '/employee',
       name: 'Employee',
       component: EmployeeView,
+    },
+    {
+      path: '/premises',
+      name: 'Premises',
+      component: PremisesView,
     },
   ],
 })
